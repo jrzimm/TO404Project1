@@ -1,0 +1,99 @@
+---
+title: "TO404Proj1"
+author: "Jack Zimmerman, Danielle Bidigare, Jeff Sondheimer, John McCarthy, Eliza Brown"
+date: "11/22/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, cache = TRUE}
+#Loading a pre-made sample csv file made from another RMD file that took a 5% sample of every data monthly dataset
+
+citibike <- read.csv("citibike_sample_total.csv")
+```
+
+```{r}
+str(citibike)
+
+#Getting rid of the X variable as it is just a counter
+citibike$X <- NULL
+
+
+```
+
+### Factorizing
+```{r}
+#Setting all of the categorical variables to a factor
+citibike$start.station.id <- as.factor(citibike$start.station.id)
+citibike$start.station.name <- as.factor(citibike$start.station.name)
+
+citibike$end.station.id <- as.factor(citibike$end.station.id)
+citibike$end.station.name <- as.factor(citibike$end.station.name)
+
+citibike$bikeid <- as.factor(citibike$bikeid)
+citibike$usertype <- as.factor(citibike$usertype)
+
+citibike$gender <- as.factor(citibike$gender)
+#Give name to numeric gender classification
+levels(citibike$gender)[levels(citibike$gender)=="0"] <- "Unknown"
+levels(citibike$gender)[levels(citibike$gender)=="1"] <- "Male"
+levels(citibike$gender)[levels(citibike$gender)=="2"] <- "Female"
+
+
+#Creating an age column that will be easier to intepret
+citibike$age <- 2019 - citibike$birth.year
+head(citibike$age)
+
+```
+### Time and Data Cleaning
+```{r}
+library(tidyverse)
+
+
+citibike$months <- months(as.Date(citibike$starttime))
+citibike$months <- as.factor(citibike$months)
+
+mode(citibike$months)
+str(citibike$months)
+
+citibike = citibike %>% mutate(date = substr(citibike$starttime, 1, 10) %>% parse_date(),
+                               time = substr(citibike$starttime,12,19) %>% parse_time())
+
+str(citibike$date)
+str(citibike$time)
+
+str(citibike)
+```
+```{r}
+head(sort(citibike$age, decreasing = TRUE), 10)
+
+#We don't know the reason why the age is wrong (they could have clicked on 1880 instead of 1980, but we can't justify this), so I am going to set the age of anyone over 90 to the mean of the sample
+
+citibike$age <- ifelse(citibike$age >90, NA, citibike$age)
+citibike$age <- ifelse(is.na(citibike$age) == TRUE, mean(citibike$age, na.rm = TRUE), citibike$age)
+
+summary(citibike$age)
+
+head(sort(citibike$tripduration, decreasing = TRUE), 10)
+#All of these are likely "forgotten" and not returned. I wonder what the credit card bill looked like
+
+filter(citibike, tripduration >1000000)
+```
+### Distance Between Stations
+```{r}
+#Load geosphere so we can use distHaversine function
+library(geosphere)
+#
+startlocation <- select(citibike,c(start.station.latitude, start.station.longitude))
+endlocation <- select(citibike, c(end.station.latitude, end.station.longitude))
+
+str(startlocation)
+
+citibike$distance <- distHaversine(select(citibike,c(start.station.latitude, start.station.longitude)),select(citibike, c(end.station.latitude, end.station.longitude)))
+
+head(citibike$distance)
+```
+
