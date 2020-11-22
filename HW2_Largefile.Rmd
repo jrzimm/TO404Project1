@@ -1,0 +1,107 @@
+---
+title: "HW2_Largefile"
+output: html_document
+---
+
+
+```{r}
+samplesize <- 0.05
+```
+
+
+```{r}
+
+citibike01 <- read.csv("201901-citibike-tripdata.csv")
+citibike_sample01 <- sample_frac(citibike01, size=samplesize)
+rm(citibike01)
+
+
+```
+
+
+```{r}
+citibike02 <- read.csv("201902-citibike-tripdata.csv")
+citibike_sample02 <- sample_frac(citibike02, size=samplesize)
+rm(citibike02)
+```
+
+
+```{r}
+citibike03 <- read.csv("201903-citibike-tripdata.csv")
+citibike_sample03 <- sample_frac(citibike03, size=samplesize)
+rm(citibike03)
+```
+
+
+```{r}
+citibike04 <- read.csv("201904-citibike-tripdata.csv")
+citibike_sample04 <- sample_frac(citibike04, size=samplesize)
+rm(citibike04)
+```
+
+
+```{r}
+citibike05 <- read.csv("201905-citibike-tripdata.csv")
+citibike_sample05 <- sample_frac(citibike05, size=samplesize)
+rm(citibike05)
+```
+
+
+```{r}
+citibike06 <- read.csv("201906-citibike-tripdata.csv")
+citibike_sample06 <- sample_frac(citibike06, size=samplesize)
+rm(citibike06)
+```
+
+
+```{r}
+citibike07 <- read.csv("201907-citibike-tripdata.csv")
+citibike_sample07 <- sample_frac(citibike07, size=samplesize)
+rm(citibike07)
+```
+
+
+```{r}
+citibike08 <- read.csv("201908-citibike-tripdata.csv")
+citibike_sample08 <- sample_frac(citibike08, size=samplesize)
+rm(citibike08)
+```
+
+
+```{r}
+citibike09 <- read.csv("201909-citibike-tripdata.csv")
+citibike_sample09 <- sample_frac(citibike09, size=samplesize)
+rm(citibike09)
+```
+
+
+```{r}
+citibike10 <- read.csv("201910-citibike-tripdata.csv")
+citibike_sample10 <- sample_frac(citibike10, size=samplesize)
+rm(citibike10)
+```
+
+
+```{r}
+citibike11 <- read.csv("201911-citibike-tripdata.csv")
+citibike_sample11 <- sample_frac(citibike11, size=samplesize)
+rm(citibike11)
+```
+
+
+```{r}
+citibike12 <- read.csv("201912-citibike-tripdata.csv")
+citibike_sample12 <- sample_frac(citibike12, size=samplesize)
+rm(citibike12)
+```
+
+
+```{r}
+citibike_total <- rbind(citibike_sample01, citibike_sample02, citibike_sample03, citibike_sample04, citibike_sample05, citibike_sample06, citibike_sample07, citibike_sample08, citibike_sample09, citibike_sample10, citibike_sample11, citibike_sample12)
+
+write.csv(citibike_total, "citibike_sample_total.csv")
+
+
+
+```
+
