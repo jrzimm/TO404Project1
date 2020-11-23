@@ -97,3 +97,74 @@ citibike$distance <- distHaversine(select(citibike,c(start.station.latitude, sta
 head(citibike$distance)
 ```
 
+
+#Data Exploration
+```{r}
+str(citibike)
+avergae_trip_duration <- mean(citibike$tripduration)
+median_trip_duration <- median(citibike$tripduration)
+shortest_trip <- min(citibike$tripduration, na.rm=TRUE)
+longest_trip <- max(citibike$tripduration, na.rm=TRUE)
+```
+
+##The longest trip is `r longest_trip` seconds, and the shortest trip is `r shortest_trip` seconds.
+
+#Seeing how many "forgotten" bike trips there are. It's unlikely that anyone would have a bike greater than a week, so that's the criteria we'll use for a forgotten bike
+
+```{r}
+forgotten_bikes <- nrow(citibike[citibike$tripduration > 60*24*7,])
+forgotten_bikes
+```
+
+##See what percent of forgotten bikes are from customers. 
+```{r}
+round(nrow(citibike %>%
+  filter( tripduration > 60*24*7 & usertype == "Customer") %>%
+  select(c(tripduration, usertype)))  / 
+  nrow(citibike %>%
+  filter( tripduration > 60*24*7) %>%
+  select(c(tripduration, usertype)))*100, digits = 2)
+```
+
+##We have `r forgotten_bikes` bike trips in our data sample.
+
+```{r}
+total_number_user <- nrow(citibike[citibike$usertype,])
+total_number_user
+
+number_customer <- nrow(citibike[citibike$usertype=="Customer",])
+number_subscriber <- nrow(citibike[citibike$usertype=="Subscriber",])
+number_customer/total_number_user
+number_subscriber/total_number_user
+```
+
+```{r}
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+getmode(citibike$start.station.name)
+#This is right next to the Chrysler building in Manhattan, so Pershing Square makes sense as the most popular start station
+
+#Getting number of trips started at Pershing Square North
+nrow(citibike[citibike$start.station.name == "Pershing Square North",])
+
+
+#Most popular end station. I'm curious to see if Pershing Square is also the most popular end destination
+getmode(citibike$end.station.name)
+#and it is the most popular
+
+
+#Representative share of most popular station
+
+#Expected number of trips per station with an equal distribution
+nrow(citibike)/length(levels(citibike$start.station.name))
+
+#Pershing Square trips as a percentage of expected number of trips
+
+nrow(citibike[citibike$start.station.name == "Pershing Square North",])/(nrow(citibike)/length(levels(citibike$start.station.name)))
+#There is a 7x increase in the expected number of trips
+
+```
+
