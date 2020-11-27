@@ -168,3 +168,45 @@ nrow(citibike[citibike$start.station.name == "Pershing Square North",])/(nrow(ci
 
 ```
 
+##More data exploration
+```{r}
+#Avg trip duration by user
+avg_tripduration_by_user <- round(tapply(citibike$tripduration,citibike$usertype,mean,na.rm=TRUE),2)
+avg_tripduration_by_user
+tripduration_baseplot <- ggplot(data=citibike,aes(x=usertype,y=tripduration))
+tripduration_baseplot+geom_boxplot(outlier.colour="black",outlier.shape=16,outlier.size=2,notch=TRUE)+coord_cartesian(ylim=c(0,2500))
+
+
+```
+```{r}
+
+#density of user types by trip duration
+ggplot(data = subset(citibike, tripduration<24*60), aes(x=tripduration, fill=usertype)) + geom_density(alpha=.5)
+
+```
+
+```{r}
+#density of usertype by time
+
+citibike = citibike %>% mutate(date = substr(citibike$starttime, 1, 10) %>% parse_date(),
+                               time = substr(citibike$starttime,12,19) %>% parse_time())
+
+
+ggplot(data = citibike, aes(x = time, fill = usertype)) + geom_density(alpha=.5) + scale_fill_discrete("User Type")
+
+#stats for subscribers trip duration at 6AM to 9AM and 4PM to 7PM (ie rush hour times)
+citibike %>% filter(time>parse_time("6:00:00") & time<parse_time("9:00:00") & usertype == "Subscriber") %>% select(tripduration) %>% summary()
+
+citibike %>% filter(time>parse_time("16:00:00") & time<parse_time("19:00:00") & usertype == "Subscriber") %>% select(tripduration) %>% summary()
+
+
+citibike %>% group_by(date) %>% count()
+
+```
+
+
+
+
+
+
+
