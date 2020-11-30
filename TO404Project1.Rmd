@@ -204,7 +204,12 @@ citibike %>% group_by(date) %>% count()
 
 ```
 
-
+#usertype and months 
+```{r}
+citibike$months <- factor(citibike$months, levels = c("January","February", "March","April", "May", "June", "July", "August", "September", "October", "November", "December"))
+ggplot(data = citibike, aes(x= months, fill = gender)) + geom_bar() + labs(title = "Number of Trips by Month", x = "Month", y = "Number of Trips")
+ggplot(data = citibike, aes(x= months, fill = usertype)) + geom_bar() + labs(title = "Number of Trips by Month", x = "Month", y = "Number of Trips")
+```
 
 
 
