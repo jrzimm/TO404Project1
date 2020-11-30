@@ -25,7 +25,9 @@ citibike$X <- NULL
 ```
 
 ### Factorizing
-```{r}
+```{r, cache = TRUE}
+
+nrow(citibike[citibike$usertype == "Customer",])
 #Setting all of the categorical variables to a factor
 citibike$start.station.id <- as.factor(citibike$start.station.id)
 citibike$start.station.name <- as.factor(citibike$start.station.name)
@@ -43,7 +45,7 @@ levels(citibike$gender)[levels(citibike$gender)=="1"] <- "Male"
 levels(citibike$gender)[levels(citibike$gender)=="2"] <- "Female"
 
 
-#Creating an age column that will be easier to intepret
+#Creating an age column that will be easier to interpret
 citibike$age <- 2019 - citibike$birth.year
 head(citibike$age)
 
@@ -81,19 +83,26 @@ head(sort(citibike$tripduration, decreasing = TRUE), 10)
 #All of these are likely "forgotten" and not returned. I wonder what the credit card bill looked like
 
 filter(citibike, tripduration >1000000)
+
+round(nrow(citibike %>%
+  filter( tripduration > 60*24*7 & usertype == "Customer") %>%
+  select(c(tripduration, usertype)))  / 
+  nrow(citibike %>%
+  filter( tripduration > 60*24*7) %>%
+  select(c(tripduration, usertype)))*100, digits = 2)
 ```
 ### Distance Between Stations
 ```{r}
 #Load geosphere so we can use distHaversine function
 library(geosphere)
-#
-startlocation <- select(citibike,c(start.station.latitude, start.station.longitude))
-endlocation <- select(citibike, c(end.station.latitude, end.station.longitude))
+#Seeing if we can select the latitude and longtiude rows for the start column
+head(select(citibike,c(start.station.latitude, start.station.longitude)))
 
-str(startlocation)
 
 citibike$distance <- distHaversine(select(citibike,c(start.station.latitude, start.station.longitude)),select(citibike, c(end.station.latitude, end.station.longitude)))
 
 head(citibike$distance)
+
+str(citibike)
 ```
 
