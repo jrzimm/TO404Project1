@@ -211,7 +211,191 @@ ggplot(data = citibike, aes(x= months, fill = gender)) + geom_bar() + labs(title
 ggplot(data = citibike, aes(x= months, fill = usertype)) + geom_bar() + labs(title = "Number of Trips by Month", x = "Month", y = "Number of Trips")
 ```
 
+#most popular start stations  and plot
+```{r}
+library(readr)
+library(dplyr)
+
+
+table(citibike$end.station.id) %>% sort(decreasing = T) %>% head(5)
+
+#plotting the most frequent start stations 
+
+top_5start <- citibike %>% group_by(start.station.name, start.station.latitude, start.station.longitude) %>% summarise(count = n()) %>% arrange(desc(count))
+head(top_5start)
+str(top_5start)
+
+#trying to make a table
+
+```
+
+
+#speed during day
+```{r}
+
+
+library(geosphere)
+citibike$distance <- distHaversine(cbind(citibike$start.station.longitude, citibike$start.station.latitude), cbind(citibike$end.station.longitude, citibike$end.station.latitude))
+summary(citibike$distance)
+
+citibike$speed <- citibike$distance / citibike$tripduration
+citibike$speed
+summary(citibike$speed)
+
+#bin the time values and create ggplot - x value speed (seconds on x axis and speed on y axis - smooth graph)
+
+
+```
 
 
 
+
+```{r}
+#bike departures and bike arrivals 
+str(citibike)
+library(dplyr)
+bike_departures <- group_by(citibike, station = citibike$start.station.name, latitude = citibike$start.station.latitude, 
+                            longitude = citibike$start.station.longitude) #should bike id be as a factor or number 
+departure_count <- dplyr::summarise(bike_departures, departure_count = n()) 
+
+bike_arrivals <- group_by(citibike, station = citibike$end.station.name, latitude = citibike$end.station.latitude, 
+                            longitude = citibike$end.station.longitude)
+arrival_count <- dplyr::summarise(bike_arrivals, arrival_count = n()) #ask evan the reason we need to make it into days 
+
+#merge departure and arrival data 
+bike_deficit <- merge(departure_count, arrival_count, all = TRUE)
+
+#make Na's = 0 
+bike_deficit[is.na(bike_deficit)] <- 0
+
+#make deficit variable == departures - arrivals
+bike_deficit$deficit <- bike_deficit$departure_count - bike_deficit$arrival_count
+
+library(leaflet)
+
+leaflet(bike_deficit) %>% 
+  addTiles() %>% 
+  addCircleMarkers(lng = bike_deficit$longitude, lat = bike_deficit$latitude,
+                   popup = paste(bike_deficit$station, "<br>", ifelse(bike_deficit$deficit>=0, "Bike deficit = ", "Bike surplus = "), 
+                               abs(bike_deficit$deficit)  ), 
+                   radius = abs(bike_deficit$deficit)/500, color = ifelse(bike_deficit$deficit>0, "red", "green"))
+
+#create leaflet/gganimation for top 5 locations - day of the week
+                   
+#create a new data frame with the top 5
+top_5start <- head(top_5start, 5)
+top_5start
+
+#plot on leaflet
+
+#different amount of observations for stations and start station names (can look into)
+
+nrow(bike_deficit)
+
+library(ggplot2)
+
+
+
+summary(citibike)
+```
+
+
+#weather stuff
+```{r}
+tempdata <- read.csv("NYCWeather2019.csv")
+
+# Temperature Effects
+
+## Temp Data Cleaning
+
+str(tempdata)
+summary(tempdata)
+
+table(tempdata$STATION)
+#All the same station, so we will get rid of this information. This station is located in Central Park, which is a great central point and fairly representative of the entire city
+tempdata$STATION <- NULL
+tempdata$NAME <- NULL
+
+
+summary(tempdata$TAVG)
+#Conventional average temperature is calculated by summing the maximum and minimum temperatures and dividing by two. That's what will be done for TAVG here
+tempdata$TAVG <- (tempdata$TMIN + tempdata$TMAX)/2
+
+
+#Doing some basic searches, AWND means average daily wind speed in meters per second, and SNWD means snow depth in millimeters. Snow depth implies how much snow is actively on the ground whereas snow implies how much fell from the sky (melting impacts and residual snow from days before)
+
+#For the one NA in snow, it's fair to assume that it didn't snow that day.
+tempdata$SNOW <- ifelse(is.na(tempdata$SNOW) == TRUE, 0, tempdata$SNOW)
+```
+
+
+##Data Frame Merge 
+```{r}
+summary(citibike$date)
+summary(tempdata$DATE)
+str(tempdata)
+str(citibike)
+
+tempdata$DATE <- as.Date(tempdata$DATE, format = "%m/%d/%Y")
+citibike <- merge(citibike, tempdata, by.x = "date", by.y = "DATE",no.dups = TRUE)
+str(citibike)
+```
+
+##Data Exploration 
+```{r}
+#can't set to variable
+#How to count number of trips and overlay avg temp
+#Avg temp and trip duration
+#Wind and trip duration
+
+
+avg_month_temp <- citibike %>% group_by(months) %>% summarise(mean(TAVG), mean(TMIN), mean(TMAX),count = n())
+avg_month_temp <- avg_month_temp %>% rename(tavg = "mean(TAVG)",
+                                            tmin = "mean(TMIN)",
+                                            tmax = "mean(TMAX)")
+avg_month_temp
+
+
+
+ggplot(data = avg_month_temp, aes(x = months, y = tavg)) +geom_point() + geom_pointrange(aes(ymax = tmax, ymin = tmin)) +theme(axis.text.x = element_text(angle = 90))
+
+#(data = avg_month_temp, aes(x = months)) + geom_bar(stat = "identity", aes(y = count)) + geom_pointrange(aes(y = tavg, ymax = tmax, ymin = tmin)) + scale_y_continuous(name = "Number of Rides", sec.axis = sec_axis(trans = ~10, name = "Average Temperature (F)"))
+
+
+
+str(citibike)
+```
+
+##Trip Duration 
+```{r}
+day_weather_data <- citibike %>% group_by(date) %>% summarize(mean(TAVG), mean(AWND), mean(SNOW), mean(SNWD), mean(tripduration), count = n())
+
+day_weather_data <- day_weather_data %>% rename(tavg = "mean(TAVG)",
+                                          tripduration = "mean(tripduration)",
+                                          awnd  = "mean(AWND)",
+                                          snow = "mean(SNOW)",
+                                          snow_depth = "mean(SNWD)")
+
+day_weather_data
+
+ggplot(data = day_weather_data,aes(x = tavg, y = count)) + geom_point() + geom_smooth()
+```
+
+```{r}
+ggplot(data = day_weather_data,aes(x = awnd, y = count)) + geom_point(aes(colour = (tavg < 35))) + geom_smooth()
+
+ggplot(data = day_weather_data,aes(x = awnd, y = tripduration)) + geom_point(aes(colour = (tavg < 35))) + geom_smooth()
+#Affects numbers of trips, windspeed above 6, a lot less "long distance" rides
+```
+
+```{r}
+#Filtering out for the days in which it snowed in NYC
+citibike %>% group_by(date) %>% filter(SNOW >0) %>% summarize(count = n(), mean(TAVG), mean(tripduration))
+#Looks like it snowed 14 days in NYC
+
+
+ggplot(data = day_weather_data, aes(x = tavg, y = count, colour = (snow > 0))) + geom_point()
+ggplot(data = day_weather_data, aes(x = date, y = tavg, colour = (snow_depth > 0))) + geom_point()
+ggplot(data = day_weather_data, aes(x = date, y = tripduration, colour = (snow > 0))) + geom_point()
+```
 
