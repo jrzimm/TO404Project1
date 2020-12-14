@@ -90,8 +90,13 @@ str(citibike$time)
 str(citibike)
 
 ```
+<<<<<<< HEAD
 ### Age Cleaning
 ```{r, cache = TRUE}
+=======
+
+```{r}
+>>>>>>> e315c7aa9461ecfd02e9290e09f9b8b0ea43df5d
 head(sort(citibike$age, decreasing = TRUE), 10)
 
 #We don't know the reason why the age is wrong (they could have clicked on 1880 instead of 1980, but we can't justify this), so I am going to set the age of anyone over 90 to the mean of the sample
@@ -133,6 +138,7 @@ shortest_trip <- min(citibike$tripduration, na.rm=TRUE)
 longest_trip <- max(citibike$tripduration, na.rm=TRUE)
 ```
 
+<<<<<<< HEAD
 The longest trip is `r longest_trip` seconds, and the shortest trip is `r shortest_trip` seconds.
 
 Seeing how many "forgotten" bike trips there are. It's unlikely that anyone would have a bike greater than a week, so that's the criteria we'll use for a forgotten bike
@@ -140,10 +146,24 @@ Seeing how many "forgotten" bike trips there are. It's unlikely that anyone woul
 
 ## Forgotten Bikes
 ```{r, cache = TRUE}
+=======
+## The longest trip is `r longest_trip` seconds, and the shortest trip is `r shortest_trip` seconds.
+
+# Seeing how many "forgotten" bike trips there are. It's unlikely that anyone would have a bike greater than a week, so that's the criteria we'll use for a forgotten bike
+
+```{r}
+>>>>>>> e315c7aa9461ecfd02e9290e09f9b8b0ea43df5d
 forgotten_bikes <- nrow(citibike[citibike$tripduration > 60*60*24*7,])
 forgotten_bikes
 
+<<<<<<< HEAD
 #See what percent of forgotten bikes are from customers. 
+=======
+## See what percent of forgotten bikes are from customers. 
+```{r}
+library(dplyr)
+
+>>>>>>> e315c7aa9461ecfd02e9290e09f9b8b0ea43df5d
 round(nrow(citibike %>%
   filter( tripduration > 60*60*24*7 & usertype == "Customer") %>%
   select(c(tripduration, usertype)))  / 
@@ -207,12 +227,16 @@ tripduration_baseplot+geom_boxplot(outlier.colour="black",outlier.shape=16,outli
 
 ```
 
+<<<<<<< HEAD
 
 # User Demographic Data Visualization
 
 ## Trip Duration Density by User Type
 
 ```{r, cache = TRUE}
+=======
+```{r}
+>>>>>>> e315c7aa9461ecfd02e9290e09f9b8b0ea43df5d
 
 #density of user types by trip duration
 ggplot(data = subset(citibike, tripduration<24*60), aes(x=tripduration, fill=usertype)) + geom_density(alpha=.5)
@@ -223,6 +247,12 @@ ggplot(data = subset(citibike, tripduration<24*60), aes(x=tripduration, fill=use
 ```{r, cache = TRUE}
 ## Notes
 
+<<<<<<< HEAD
+=======
+```{r}
+## Notes
+
+>>>>>>> e315c7aa9461ecfd02e9290e09f9b8b0ea43df5d
 #density of usertype by time
 
 citibike = citibike %>% mutate(date = substr(citibike$starttime, 1, 10) %>% parse_date(),
@@ -249,10 +279,20 @@ ggplot(data = citibike, aes(x= months, fill = gender)) + geom_bar() + labs(title
 ggplot(data = citibike, aes(x= months, fill = usertype)) + geom_bar() + labs(title = "Number of Trips by Month", x = "Month", y = "Number of Trips")
 ```
 
+<<<<<<< HEAD
 # User Speed
 
 ## Calculating Speed
 ```{r, cache = TRUE}
+=======
+#speed during day
+```{r}
+
+library(geosphere)
+library(binr)
+library(OneR)
+library(lubridate)
+>>>>>>> e315c7aa9461ecfd02e9290e09f9b8b0ea43df5d
 
 
 citibike$distance <- distHaversine(cbind(citibike$start.station.longitude, citibike$start.station.latitude), cbind(citibike$end.station.longitude, citibike$end.station.latitude))
@@ -260,6 +300,7 @@ summary(citibike$distance)
 
 #Create speed column and convert it to MPH by multiplying by 2.237
 citibike$speed <- (citibike$distance / citibike$tripduration) * 2.237
+<<<<<<< HEAD
 
 summary(citibike$speed)
 
@@ -273,9 +314,19 @@ bin(citibike$time, nbins = 24, labels = NULL, method = c("length", "content",
 
 citibike$hourbin <- as.factor(hms(citibike$time)$hour)
 ```
+=======
+citibike$speed
+summary(citibike$speed)
+
+#bin the time values and create ggplot - x value speed (seconds on x axis and speed on y axis - smooth graph)
+
+bin(citibike$time, nbins = 24, labels = NULL, method = c("length", "content",
+  "clusters"), na.omit = TRUE)
+>>>>>>> e315c7aa9461ecfd02e9290e09f9b8b0ea43df5d
 
 ## Speed and Time Relationship
 
+<<<<<<< HEAD
 ```{r}
 
 ggplot(data=citibike,aes(x=hourbin,y=speed,group=hourbin))+geom_boxplot()+coord_cartesian(ylim=c(0, 23))
@@ -301,9 +352,43 @@ avgspeed_hour <- round(tapply(citibike$speed,citibike$hourbin,mean),2)
 
 plot(avgspeed_hour,pch=15,col="red")
 ```
+=======
+#pull out time—mutate or group_by?, group by time, find average speed for each group
+
+citibike$hourbin <- as.factor(hms(citibike$time)$hour)
 
 
+ggplot(data=citibike,aes(x=hourbin,y=speed,group=hourbin))+geom_boxplot()+coord_cartesian(ylim=c(0, 23))
+
+ggplot(data=citibike,aes(x=hourbin,y=speed,fill=usertype))+geom_boxplot()+coord_cartesian(ylim=c(0, 23))
+
+ggplot(data=citibike,aes(x=hourbin,y=speed,fill=usertype))+geom_boxplot()+coord_cartesian(ylim=c(0, 23))+facet_wrap(citibike$weekday)
+
+##Look at speed by weekday
+
+citibike$weekday <- as.factor(wday(citibike$date,label=TRUE))
+levels(citibike$weekday)
+
+ggplot(data=citibike,aes(x=weekday,y=speed,fill=usertype))+geom_boxplot()+coord_cartesian(ylim=c(0, 20))
+>>>>>>> e315c7aa9461ecfd02e9290e09f9b8b0ea43df5d
+
+##Look at speed by month
+
+<<<<<<< HEAD
 # Station Deficit
+=======
+ ggplot(data=citibike,aes(x=months,y=speed,fill=usertype))+geom_boxplot()+coord_cartesian(ylim=c(0, 20))
+
+#Plot mean speed by hour
+ 
+avgspeed_hour <- round(tapply(citibike$speed,citibike$hourbin,mean),2)
+
+plot(avgspeed_hour,pch=15,col="red")
+
+
+
+```
+>>>>>>> e315c7aa9461ecfd02e9290e09f9b8b0ea43df5d
 
 ## Calculating Station Deficit
 
@@ -341,12 +426,60 @@ leaflet(bike_deficit) %>%
                    radius = abs(bike_deficit$deficit)/500, color = ifelse(bike_deficit$deficit>0, "red", "green"))
 
 #create leaflet/gganimation for top 5 locations - day of the week
+<<<<<<< HEAD
 ```
 
 ### Top Stations Map
 ```{r}
 #Mapping the top 5 start and end stations
 
+=======
+
+
+#Mapping the top 5 start and end stations
+
+library(readr)
+library(dplyr)
+library(leaflet)
+
+
+table(citibike$end.station.id) %>% sort(decreasing = T) %>% head(5)
+
+#plotting the most frequent start stations 
+
+top_5start <- citibike %>% group_by(start.station.name, start.station.latitude, start.station.longitude) %>% summarise(count = n()) %>% arrange(desc(count))
+top_5start <- head(top_5start,5) 
+str(top_5start)
+
+
+leaflet(top_5start)%>%
+  addTiles()%>%
+  addCircleMarkers(lng=top_5start$start.station.longitude,lat=top_5start$start.station.latitude,
+                   popup=paste(top_5start$start.station.name,"<br>","Ride launches per year",top_5start$count),
+                   radius=top_5start$count/300,color="green")
+
+
+top_5end <- citibike %>% group_by(end.station.name, end.station.latitude, end.station.longitude) %>% summarise(count = n()) %>% arrange(desc(count))
+top_5end <- head(top_5end,5)
+str(top_5end)
+
+##ideas: bin by month (possibly do animation), color map by time (would need new dataframe of starttime)
+
+
+
+
+leaflet()%>%
+  addTiles()%>%
+  addCircleMarkers(lng=top_5end$end.station.longitude,lat=top_5end$end.station.latitude,
+                   popup=paste(top_5end$end.station.name,"<br>","Ride ends per year:",top_5end$count),
+                   radius=top_5end$count/300,color="red")%>%
+  addCircleMarkers(lng=top_5start$start.station.longitude,lat=top_5start$start.station.latitude,
+                   popup=paste(top_5start$start.station.name,"<br>","Ride launches per year:",top_5start$count),
+                   radius=top_5start$count/300,color="blue")
+
+
+#plot on leaflet
+>>>>>>> e315c7aa9461ecfd02e9290e09f9b8b0ea43df5d
 
 
 
