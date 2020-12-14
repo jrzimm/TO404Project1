@@ -2,20 +2,41 @@
 title: "TO404Proj1"
 author: "Jack Zimmerman, Danielle Bidigare, Jeff Sondheimer, John McCarthy, Eliza Brown"
 date: "11/22/2020"
-output: html_document
+output: 
+  html_document: 
+    toc: TRUE
+    toc_float: TRUE
+    number_sections: TRUE
+    theme: united
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(cache = TRUE)
 ```
 
+# Introduction
+
+## Packages Used
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(geosphere)
+library(OneR)
+library(lubridate)
+library(leaflet)
+library(readr)
+```
+
+## File Loading
 ```{r, cache = TRUE}
 #Loading a pre-made sample csv file made from another RMD file that took a 5% sample of every data monthly dataset
 
 citibike <- read.csv("citibike_sample_total.csv")
 ```
 
-```{r}
+## Variable Elimination
+```{r, cache = TRUE}
 str(citibike)
 
 #Getting rid of the X variable as it is just a counter
@@ -23,11 +44,10 @@ citibike$X <- NULL
 
 
 ```
+## Data Cleaning
 
-### Factorizing
+### Factorizing Variables
 ```{r, cache = TRUE}
-
-nrow(citibike[citibike$usertype == "Customer",])
 #Setting all of the categorical variables to a factor
 citibike$start.station.id <- as.factor(citibike$start.station.id)
 citibike$start.station.name <- as.factor(citibike$start.station.name)
@@ -45,14 +65,14 @@ levels(citibike$gender)[levels(citibike$gender)=="1"] <- "Male"
 levels(citibike$gender)[levels(citibike$gender)=="2"] <- "Female"
 
 
-#Creating an age column that will be easier to interpret
+#Creating an age column that will be easier to intepret
 citibike$age <- 2019 - citibike$birth.year
 head(citibike$age)
 
 ```
 ### Time and Data Cleaning
-```{r}
-library(tidyverse)
+```{r, cache = TRUE}
+
 
 
 citibike$months <- months(as.Date(citibike$starttime))
@@ -68,8 +88,10 @@ str(citibike$date)
 str(citibike$time)
 
 str(citibike)
+
 ```
-```{r}
+### Age Cleaning
+```{r, cache = TRUE}
 head(sort(citibike$age, decreasing = TRUE), 10)
 
 #We don't know the reason why the age is wrong (they could have clicked on 1880 instead of 1980, but we can't justify this), so I am going to set the age of anyone over 90 to the mean of the sample
@@ -83,32 +105,27 @@ head(sort(citibike$tripduration, decreasing = TRUE), 10)
 #All of these are likely "forgotten" and not returned. I wonder what the credit card bill looked like
 
 filter(citibike, tripduration >1000000)
-
-round(nrow(citibike %>%
-  filter( tripduration > 60*24*7 & usertype == "Customer") %>%
-  select(c(tripduration, usertype)))  / 
-  nrow(citibike %>%
-  filter( tripduration > 60*24*7) %>%
-  select(c(tripduration, usertype)))*100, digits = 2)
 ```
 ### Distance Between Stations
-```{r}
+```{r, cache = TRUE}
 #Load geosphere so we can use distHaversine function
 library(geosphere)
-#Seeing if we can select the latitude and longtiude rows for the start column
-head(select(citibike,c(start.station.latitude, start.station.longitude)))
+#
+startlocation <- select(citibike,c(start.station.latitude, start.station.longitude))
+endlocation <- select(citibike, c(end.station.latitude, end.station.longitude))
 
+str(startlocation)
 
 citibike$distance <- distHaversine(select(citibike,c(start.station.latitude, start.station.longitude)),select(citibike, c(end.station.latitude, end.station.longitude)))
 
 head(citibike$distance)
-
-str(citibike)
 ```
 
 
-#Data Exploration
-```{r}
+# Data Exploration
+
+## Basic Statistics
+```{r, cache = TRUE}
 str(citibike)
 avergae_trip_duration <- mean(citibike$tripduration)
 median_trip_duration <- median(citibike$tripduration)
@@ -116,28 +133,30 @@ shortest_trip <- min(citibike$tripduration, na.rm=TRUE)
 longest_trip <- max(citibike$tripduration, na.rm=TRUE)
 ```
 
-##The longest trip is `r longest_trip` seconds, and the shortest trip is `r shortest_trip` seconds.
+The longest trip is `r longest_trip` seconds, and the shortest trip is `r shortest_trip` seconds.
 
-#Seeing how many "forgotten" bike trips there are. It's unlikely that anyone would have a bike greater than a week, so that's the criteria we'll use for a forgotten bike
+Seeing how many "forgotten" bike trips there are. It's unlikely that anyone would have a bike greater than a week, so that's the criteria we'll use for a forgotten bike
 
-```{r}
-forgotten_bikes <- nrow(citibike[citibike$tripduration > 60*24*7,])
+
+## Forgotten Bikes
+```{r, cache = TRUE}
+forgotten_bikes <- nrow(citibike[citibike$tripduration > 60*60*24*7,])
 forgotten_bikes
-```
 
-##See what percent of forgotten bikes are from customers. 
-```{r}
+#See what percent of forgotten bikes are from customers. 
 round(nrow(citibike %>%
-  filter( tripduration > 60*24*7 & usertype == "Customer") %>%
+  filter( tripduration > 60*60*24*7 & usertype == "Customer") %>%
   select(c(tripduration, usertype)))  / 
   nrow(citibike %>%
-  filter( tripduration > 60*24*7) %>%
+  filter( tripduration > 60*60*24*7) %>%
   select(c(tripduration, usertype)))*100, digits = 2)
 ```
 
-##We have `r forgotten_bikes` bike trips in our data sample.
+We have `r forgotten_bikes` bike trips in our data sample.
 
-```{r}
+
+## User Type
+```{r, cache = TRUE}
 total_number_user <- nrow(citibike[citibike$usertype,])
 total_number_user
 
@@ -146,8 +165,8 @@ number_subscriber <- nrow(citibike[citibike$usertype=="Subscriber",])
 number_customer/total_number_user
 number_subscriber/total_number_user
 ```
-
-```{r}
+## Most Popular Station
+```{r, cache = TRUE}
 getmode <- function(v) {
    uniqv <- unique(v)
    uniqv[which.max(tabulate(match(v, uniqv)))]
@@ -177,8 +196,8 @@ nrow(citibike[citibike$start.station.name == "Pershing Square North",])/(nrow(ci
 
 ```
 
-##More data exploration
-```{r}
+## More data exploration
+```{r, cache = TRUE}
 #Avg trip duration by user
 avg_tripduration_by_user <- round(tapply(citibike$tripduration,citibike$usertype,mean,na.rm=TRUE),2)
 avg_tripduration_by_user
@@ -187,14 +206,23 @@ tripduration_baseplot+geom_boxplot(outlier.colour="black",outlier.shape=16,outli
 
 
 ```
-```{r}
+
+
+# User Demographic Data Visualization
+
+## Trip Duration Density by User Type
+
+```{r, cache = TRUE}
 
 #density of user types by trip duration
 ggplot(data = subset(citibike, tripduration<24*60), aes(x=tripduration, fill=usertype)) + geom_density(alpha=.5)
 
 ```
+## Time of Rides by User Type
 
-```{r}
+```{r, cache = TRUE}
+## Notes
+
 #density of usertype by time
 
 citibike = citibike %>% mutate(date = substr(citibike$starttime, 1, 10) %>% parse_date(),
@@ -213,25 +241,171 @@ citibike %>% group_by(date) %>% count()
 
 ```
 
+## Number of Trips by Months 
 
-
-```{r}
-str(citibike$months)
-citibike$months <- as.factor(citibike$months)
-
+```{r, cache = TRUE}
 citibike$months <- factor(citibike$months, levels = c("January","February", "March","April", "May", "June", "July", "August", "September", "October", "November", "December"))
-
-
 ggplot(data = citibike, aes(x= months, fill = gender)) + geom_bar() + labs(title = "Number of Trips by Month", x = "Month", y = "Number of Trips")
-
-ggplot(data = citibike, aes(x= months, fill = usertype)) + geom_bar() + labs(title = "Number of Trips by Month", x = "Month", y = "Number of Trips") +theme(axis.text.x = element_text(angle = 90))
+ggplot(data = citibike, aes(x= months, fill = usertype)) + geom_bar() + labs(title = "Number of Trips by Month", x = "Month", y = "Number of Trips")
 ```
 
-# Temperature Effects
+# User Speed
 
-## Temp Data Cleaning
+## Calculating Speed
+```{r, cache = TRUE}
+
+
+citibike$distance <- distHaversine(cbind(citibike$start.station.longitude, citibike$start.station.latitude), cbind(citibike$end.station.longitude, citibike$end.station.latitude))
+summary(citibike$distance)
+
+#Create speed column and convert it to MPH by multiplying by 2.237
+citibike$speed <- (citibike$distance / citibike$tripduration) * 2.237
+
+summary(citibike$speed)
+
+#bin the time values and create ggplot - x value speed (seconds on x axis and speed on y axis - smooth graph)
+
+bin(citibike$time, nbins = 24, labels = NULL, method = c("length", "content",
+  "clusters"), na.omit = TRUE)
+
+
+#pull out time—mutate or group_by?, group by time, find average speed for each group
+
+citibike$hourbin <- as.factor(hms(citibike$time)$hour)
+```
+
+## Speed and Time Relationship
+
 ```{r}
+
+ggplot(data=citibike,aes(x=hourbin,y=speed,group=hourbin))+geom_boxplot()+coord_cartesian(ylim=c(0, 23))
+
+ggplot(data=citibike,aes(x=hourbin,y=speed,fill=usertype))+geom_boxplot()+coord_cartesian(ylim=c(0, 23))
+
+ggplot(data=citibike,aes(x=hourbin,y=speed,fill=usertype))+geom_boxplot()+coord_cartesian(ylim=c(0, 23))+facet_wrap(citibike$weekday)
+
+##Look at speed by weekday
+
+citibike$weekday <- as.factor(wday(citibike$date,label=TRUE))
+levels(citibike$weekday)
+
+ggplot(data=citibike,aes(x=weekday,y=speed,fill=usertype))+geom_boxplot()+coord_cartesian(ylim=c(0, 20))
+
+##Look at speed by month
+
+ ggplot(data=citibike,aes(x=months,y=speed,fill=usertype))+geom_boxplot()+coord_cartesian(ylim=c(0, 20))
+
+#Plot mean speed by hour
+ 
+avgspeed_hour <- round(tapply(citibike$speed,citibike$hourbin,mean),2)
+
+plot(avgspeed_hour,pch=15,col="red")
+```
+
+
+# Station Deficit
+
+## Calculating Station Deficit
+
+```{r, cache = TRUE}
+#bike departures and bike arrivals 
+str(citibike)
+
+bike_departures <- group_by(citibike, station = citibike$start.station.name, latitude = citibike$start.station.latitude, 
+                            longitude = citibike$start.station.longitude) #should bike id be as a factor or number 
+departure_count <- dplyr::summarise(bike_departures, departure_count = n()) 
+
+bike_arrivals <- group_by(citibike, station = citibike$end.station.name, latitude = citibike$end.station.latitude, 
+                            longitude = citibike$end.station.longitude)
+arrival_count <- dplyr::summarise(bike_arrivals, arrival_count = n()) #ask evan the reason we need to make it into days 
+
+#merge departure and arrival data 
+bike_deficit <- merge(departure_count, arrival_count, all = TRUE)
+
+#make Na's = 0 
+bike_deficit[is.na(bike_deficit)] <- 0
+
+#make deficit variable == departures - arrivals
+bike_deficit$deficit <- bike_deficit$departure_count - bike_deficit$arrival_count
+```
+
+## Station Mapping
+
+### Deficit Map
+```{r}
+leaflet(bike_deficit) %>% 
+  addTiles() %>% 
+  addCircleMarkers(lng = bike_deficit$longitude, lat = bike_deficit$latitude,
+                   popup = paste(bike_deficit$station, "<br>", ifelse(bike_deficit$deficit>=0, "Bike deficit = ", "Bike surplus = "), 
+                               abs(bike_deficit$deficit)  ), 
+                   radius = abs(bike_deficit$deficit)/500, color = ifelse(bike_deficit$deficit>0, "red", "green"))
+
+#create leaflet/gganimation for top 5 locations - day of the week
+```
+
+### Top Stations Map
+```{r}
+#Mapping the top 5 start and end stations
+
+
+
+
+table(citibike$end.station.id) %>% sort(decreasing = T) %>% head(5)
+
+#plotting the most frequent start stations 
+
+top_5start <- citibike %>% group_by(start.station.name, start.station.latitude, start.station.longitude) %>% summarise(count = n()) %>% arrange(desc(count))
+top_5start <- head(top_5start,5) 
+str(top_5start)
+
+
+leaflet(top_5start)%>%
+  addTiles()%>%
+  addCircleMarkers(lng=top_5start$start.station.longitude,lat=top_5start$start.station.latitude,
+                   popup=paste(top_5start$start.station.name,"<br>","Ride launches per year",top_5start$count),
+                   radius=top_5start$count/300,color="green")
+
+
+top_5end <- citibike %>% group_by(end.station.name, end.station.latitude, end.station.longitude) %>% summarise(count = n()) %>% arrange(desc(count))
+top_5end <- head(top_5end,5)
+str(top_5end)
+
+##ideas: bin by month (possibly do animation), color map by time (would need new dataframe of starttime)
+
+
+
+
+leaflet()%>%
+  addTiles()%>%
+  addCircleMarkers(lng=top_5end$end.station.longitude,lat=top_5end$end.station.latitude,
+                   popup=paste(top_5end$end.station.name,"<br>","Ride ends per year:",top_5end$count),
+                   radius=top_5end$count/300,color="red")%>%
+  addCircleMarkers(lng=top_5start$start.station.longitude,lat=top_5start$start.station.latitude,
+                   popup=paste(top_5start$start.station.name,"<br>","Ride launches per year:",top_5start$count),
+                   radius=top_5start$count/300,color="blue")
+
+
+#plot on leaflet
+
+nrow(bike_deficit)
+summary(citibike)
+```
+
+
+# Weather Impacts
+
+## Itroducing Weather Data
+
+### File Loading
+```{r, cache = TRUE}
+#This data  is taken from NOAA website
 tempdata <- read.csv("NYCWeather2019.csv")
+
+
+```
+
+### Data Cleaning
+```{r}
 
 str(tempdata)
 summary(tempdata)
@@ -251,56 +425,28 @@ tempdata$TAVG <- (tempdata$TMIN + tempdata$TMAX)/2
 
 #For the one NA in snow, it's fair to assume that it didn't snow that day.
 tempdata$SNOW <- ifelse(is.na(tempdata$SNOW) == TRUE, 0, tempdata$SNOW)
-
-
-
-#For AWND, we don't have the wind data from January 1st to March 9th, so we will replace all the NA's with the December mean. We chose just the December mean because weather doesn't really change until mid to late March anyways.
-
-tempdata$AWND <- ifelse(is.na(tempdata$AWND) == TRUE, mean(tempdata$AWND[336:365]), tempdata$AWND)
-
-head(tempdata$AWND, 30)
-#The wind data for the first two months will be fairly inaccurate considering there is no variation, but we will live with this for now. We could potentially take the wind data from the next nearest weather station if it becomes inhibitory towards the analysis.
 ```
-## Data Frame Merge
-```{r}
-summary(citibike$date)
-summary(tempdata$DATE)
-str(tempdata$DATE)
+
+
+### Data Frame Merge 
+```{r, cache = TRUE}
+
 
 tempdata$DATE <- as.Date(tempdata$DATE, format = "%m/%d/%Y")
-citibike <- merge(citibike, tempdata, by.x = "date", by.y = "DATE")
+citibike <- merge(citibike, tempdata, by.x = "date", by.y = "DATE",no.dups = TRUE)
 str(citibike)
 ```
-## Data Exploration
 
-```{r}
-
-#can't set to variable
-#How to count number of trips and overlay avg temp
-#Avg temp and trip duration
-#Wind and trip duration
-
-
+### Weather List Data Creation 
+```{r, cache = TRUE}
+#Creating variables that are grouped by month and day level to analyze trends
 avg_month_temp <- citibike %>% group_by(months) %>% summarise(mean(TAVG), mean(TMIN), mean(TMAX),count = n())
 avg_month_temp <- avg_month_temp %>% rename(tavg = "mean(TAVG)",
                                             tmin = "mean(TMIN)",
                                             tmax = "mean(TMAX)")
-avg_month_temp
 
 
 
-ggplot(data = avg_month_temp, aes(x = months, y = tavg)) +geom_point() + geom_pointrange(aes(ymax = tmax, ymin = tmin)) +theme(axis.text.x = element_text(angle = 90))
-
-#(data = avg_month_temp, aes(x = months)) + geom_bar(stat = "identity", aes(y = count)) + geom_pointrange(aes(y = tavg, ymax = tmax, ymin = tmin)) + scale_y_continuous(name = "Number of Rides", sec.axis = sec_axis(trans = ~10, name = "Average Temperature (F)"))
-
-
-
-str(citibike)
-```
-
-## Trip Duration
-
-```{r}
 day_weather_data <- citibike %>% group_by(date) %>% summarize(mean(TAVG), mean(AWND), mean(SNOW), mean(SNWD), mean(tripduration), count = n())
 
 day_weather_data <- day_weather_data %>% rename(tavg = "mean(TAVG)",
@@ -308,16 +454,59 @@ day_weather_data <- day_weather_data %>% rename(tavg = "mean(TAVG)",
                                           awnd  = "mean(AWND)",
                                           snow = "mean(SNOW)",
                                           snow_depth = "mean(SNWD)")
-
-day_weather_data
-
-ggplot(data = day_weather_data,aes(x = tavg, y = count)) + geom_point() + geom_smooth()
 ```
 
-
+## Weather Exploratiom
 
 ```{r}
 
+
+ggplot(data = avg_month_temp, aes(x = months, y = tavg)) +geom_point() + geom_pointrange(aes(ymax = tmax, ymin = tmin)) +theme(axis.text.x = element_text(angle = 90))
+
+#(data = avg_month_temp, aes(x = months)) + geom_bar(stat = "identity", aes(y = count)) + geom_pointrange(aes(y = tavg, ymax = tmax, ymin = tmin)) + scale_y_continuous(name = "Number of Rides", sec.axis = sec_axis(trans = ~10, name = "Average Temperature (F)"))
+
+ggplot(data = day_weather_data, aes(x = tavg, y = awnd)) + geom_point() + geom_smooth()
+
+str(citibike)
+```
+
+
+## Optimal Riding Temperature 
+```{r, cache = TRUE}
+
+ggplot(data = avg_month_temp, aes(x = months, y = tavg)) +geom_point() + geom_pointrange(aes(ymax = tmax, ymin = tmin)) +theme(axis.text.x = element_text(angle = 90))
+
+
+ggplot(data = day_weather_data,aes(x = tavg, y = count)) + geom_point() + geom_smooth()
+
+user_weather_chart <-  ggplot() + geom_point(data =(citibike %>% group_by(date) %>% filter(usertype == "Subscriber") %>% summarize(mean(TAVG),count = n()) %>%
+  rename(tavg = "mean(TAVG)")), aes(x = tavg, y = count, color = "red")) + geom_smooth(data = (citibike %>% group_by(date) %>% filter(usertype == "Subscriber") %>% summarize(mean(TAVG),count = n()) %>%
+  rename(tavg = "mean(TAVG)")),aes(x = tavg, y = count)) + geom_point(data = (citibike %>% group_by(date) %>% filter(usertype == "Customer") %>% summarize(mean(TAVG),count = n()) %>%
+  rename(tavg = "mean(TAVG)")), aes(x = tavg, y = count, color = "green")) + geom_smooth(data = (citibike %>% group_by(date) %>% filter(usertype == "Customer") %>% summarize(mean(TAVG),count = n()) %>%
+  rename(tavg = "mean(TAVG)")), aes(x = tavg, y = count, color = "green"))
+
+user_weather_chart
+
+age_weather_chart <-  ggplot() + geom_point(data =(citibike %>% group_by(date) %>% filter(age > 65) %>% summarize(mean(TAVG),count = n()) %>%
+  rename(tavg = "mean(TAVG)")), aes(x = tavg, y = count, color = "red")) + geom_smooth(data = (citibike %>% group_by(date) %>% filter(age > 65) %>% summarize(mean(TAVG),count = n()) %>%
+  rename(tavg = "mean(TAVG)")),aes(x = tavg, y = count)) + geom_point(data = (citibike %>% group_by(date) %>% filter(age <30) %>% summarize(mean(TAVG),count = n()) %>%
+  rename(tavg = "mean(TAVG)")), aes(x = tavg, y = count, color = "green")) + geom_smooth(data = (citibike %>% group_by(date) %>% filter(age < 30) %>% summarize(mean(TAVG),count = n()) %>%
+  rename(tavg = "mean(TAVG)")), aes(x = tavg, y = count, color = "green"))
+
+age_weather_chart
+
+gender_weather_chart <- age_weather_chart <-  ggplot() + geom_point(data =(citibike %>% group_by(date) %>% filter(gender == "Male") %>% summarize(mean(TAVG),count = n()) %>%
+  rename(tavg = "mean(TAVG)")), aes(x = tavg, y = count, color = "red")) + geom_smooth(data = (citibike %>% group_by(date) %>% filter(gender == "Male") %>% summarize(mean(TAVG),count = n()) %>%
+  rename(tavg = "mean(TAVG)")),aes(x = tavg, y = count)) + geom_point(data = (citibike %>% group_by(date) %>% filter(gender == "Female") %>% summarize(mean(TAVG),count = n()) %>%
+  rename(tavg = "mean(TAVG)")), aes(x = tavg, y = count, color = "green")) + geom_smooth(data = (citibike %>% group_by(date) %>% filter(gender == "Female") %>% summarize(mean(TAVG),count = n()) %>%
+  rename(tavg = "mean(TAVG)")), aes(x = tavg, y = count, color = "green"))
+
+gender_weather_chart
+
+```
+
+## Wind Speed Impacts
+```{r, cache = TRUE}
 ggplot(data = day_weather_data,aes(x = awnd, y = count)) + geom_point(aes(colour = (tavg < 35))) + geom_smooth()
 
 ggplot(data = day_weather_data,aes(x = awnd, y = tripduration)) + geom_point(aes(colour = (tavg < 35))) + geom_smooth()
@@ -325,8 +514,8 @@ ggplot(data = day_weather_data,aes(x = awnd, y = tripduration)) + geom_point(aes
 ```
 
 
-
-```{r}
+## Snow Impacts
+```{r, cache = TRUE}
 #Filtering out for the days in which it snowed in NYC
 citibike %>% group_by(date) %>% filter(SNOW >0) %>% summarize(count = n(), mean(TAVG), mean(tripduration))
 #Looks like it snowed 14 days in NYC
@@ -335,8 +524,10 @@ citibike %>% group_by(date) %>% filter(SNOW >0) %>% summarize(count = n(), mean(
 ggplot(data = day_weather_data, aes(x = tavg, y = count, colour = (snow > 0))) + geom_point()
 ggplot(data = day_weather_data, aes(x = date, y = tavg, colour = (snow_depth > 0))) + geom_point()
 ggplot(data = day_weather_data, aes(x = date, y = tripduration, colour = (snow > 0))) + geom_point()
-
 ```
 
+# Summary
 
+## Findings Summary
 
+## Recommendation
